@@ -16,7 +16,7 @@ if not TOKEN:
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+dp = Dispatcher(storage=storage, bot=bot)
 
 main_kb = ReplyKeyboardMarkup(resize_keyboard=True)
 main_kb.add(KeyboardButton("Cari Teman 🔍"))
