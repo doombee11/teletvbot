@@ -19,12 +19,21 @@ storage = MemoryStorage()
 
 dp = Dispatcher(storage=storage, bot=bot)
 
-main_kb = ReplyKeyboardMarkup(resize_keyboard=True)
-main_kb.add(KeyboardButton("Cari Teman 🔍"))
-main_kb.add(KeyboardButton("Next 🔁"), KeyboardButton("Berhenti ❌"))
+main_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Cari Teman 🔍")],
+        [KeyboardButton(text="Next 🔁"), KeyboardButton(text="Berhenti ❌")]
+    ],
+    resize_keyboard=True
+)
 
-gender_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-gender_kb.add(KeyboardButton("Pria"), KeyboardButton("Wanita"))
+gender_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Pria"), KeyboardButton(text="Wanita")]
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)
 
 waiting_users = set()
 active_chats = {}
