@@ -147,7 +147,7 @@ async def process_about(msg: types.Message, state: FSMContext):
         await msg.answer("❌ Hanya huruf, angka, spasi, dan emotikon yang diperbolehkan. Coba lagi:")
         return
 
-about = about.replace('_', '\\_')
+    about = about.replace('_', '\\_')
 
     data = await state.get_data()
     set_user_info(
