@@ -1,5 +1,8 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.state import StatesGroup, State
+from aiogram.fsm import FSMContext
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 import logging
 
 TOKEN = "7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4"
@@ -17,8 +20,11 @@ gender_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 gender_kb.add(KeyboardButton("Pria"), KeyboardButton("Wanita"))
 
 waiting_users = set()
-active_chats = {}  # user_id: partner_id
-user_data = {}     # user_id: {'gender': ..., 'nama': ...}
+active_chats = {}
+user_data = {}
+
+class Form(StatesGroup):
+    waiting_for_name = State()  # State untuk menunggu nama
 
 def find_partner(user_id):
     if waiting_users:
@@ -59,8 +65,6 @@ def set_nama(user_id, nama):
 def get_user_info(user_id):
     return user_data.get(user_id, {'gender': 'Tidak diketahui', 'nama': 'Anonim'})
 
-
-
 @dp.message_handler(commands=['start'])
 async def start_handler(msg: types.Message):
     await msg.answer(
@@ -84,15 +88,17 @@ async def set_gender_handler(msg: types.Message):
 @dp.message_handler(commands=['setnama'])
 async def set_nama_handler(msg: types.Message):
     await msg.answer("Ketik nama panggilan kamu (maks 20 karakter):", reply_markup=ReplyKeyboardRemove())
+    await Form.waiting_for_name.set()  # Pindah ke state waiting_for_name
 
-    @dp.message_handler()
-    async def receive_nama(msg: types.Message):
-        if len(msg.text) > 20:
-            await msg.answer("Nama terlalu panjang. Coba lagi:")
-            return
-        set_nama(msg.from_user.id, msg.text)
-        await msg.answer(f"Nama kamu diset sebagai *{msg.text}*", parse_mode="Markdown", reply_markup=main_kb)
-        dp.message_handlers.unregister(receive_nama)
+@dp.message_handler(state=Form.waiting_for_name)
+async def process_name(msg: types.Message, state: FSMContext):
+    name = msg.text
+    if len(name) > 20:
+        await msg.answer("Nama terlalu panjang. Coba lagi (maks 20 karakter):")
+        return
+    set_nama(msg.from_user.id, name)
+    await msg.answer(f"Nama kamu diset sebagai *{name}*", parse_mode="Markdown", reply_markup=main_kb)
+    await state.finish()  # Kembalikan ke state awal
 
 @dp.message_handler(lambda msg: msg.text == "Cari Teman 🔍")
 async def cari_handler(msg: types.Message):
@@ -143,7 +149,6 @@ async def chat_handler(msg: types.Message):
         await bot.send_message(partner, msg.text)
     else:
         await msg.answer("Kamu belum terhubung dengan siapa pun.\nTekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
 
 if __name__ == '__main__':
     dp.start_polling()
