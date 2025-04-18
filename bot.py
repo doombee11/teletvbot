@@ -51,12 +51,15 @@ class Form(StatesGroup):
     waiting_for_about = State()
 
 def find_partner(user_id):
+    waiting_users.discard(user_id)
+    
     for partner_id in list(waiting_users):
         if partner_id != user_id:
             waiting_users.remove(partner_id)
             active_chats[user_id] = partner_id
             active_chats[partner_id] = user_id
             return partner_id
+    
     waiting_users.add(user_id)
     return None
 
@@ -74,6 +77,7 @@ def get_partner(user_id):
 
 def set_user_info(user_id, name, age, photo, gender, about):
     user_data[user_id] = {'name': name, 'age': age, 'photo': photo, 'gender': gender, 'about': about}
+    logging.info(f"User data updated: {user_data[user_id]}")
 
 def get_user_info(user_id):
     data = user_data.get(user_id, {})
@@ -87,6 +91,7 @@ def get_user_info(user_id):
 
 @router.message(Command("start"))
 async def start_handler(msg: types.Message, state: FSMContext):
+    logging.info(f"User {msg.from_user.id} started the bot.")
     await msg.answer("👋 Halo! Sebelum mulai, isi dulu data kamu ya.", reply_markup=ReplyKeyboardRemove())
     await msg.answer("Ketik nama kamu:")
     await state.set_state(Form.waiting_for_name)
@@ -135,7 +140,7 @@ async def process_about(msg: types.Message, state: FSMContext):
         await msg.answer("❌ Hanya huruf, angka, spasi, dan emotikon yang diperbolehkan. Coba lagi:")
         return
 
-    about = f"_{about}_"
+    about = f"_{about.replace('_', '\\_')}_"
 
     data = await state.get_data()
     set_user_info(
@@ -165,8 +170,12 @@ async def handle_voice_note(msg: types.Message):
     partner_id = get_partner(user_id)
 
     if partner_id:
-        await bot.send_voice(partner_id, msg.voice.file_id)
-        await msg.answer("🎧 Voice note diteruskan ke teman kamu!")
+        try:
+            await bot.send_voice(partner_id, msg.voice.file_id)
+            await msg.answer("🎧 Voice note diteruskan ke teman kamu!")
+        except Exception as e:
+            logging.error(f"Failed to send voice note: {e}")
+            await msg.answer("❌ Gagal mengirim voice note ke teman.")
     else:
         await msg.answer("⚠️ Teman chat kamu sudah keluar atau tidak tersedia.")
 
