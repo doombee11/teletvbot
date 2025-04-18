@@ -1,3 +1,6 @@
+import aiogram
+print(aiogram.__version__)
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import StatesGroup, State
