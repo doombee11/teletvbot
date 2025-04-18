@@ -32,7 +32,7 @@ main_kb = ReplyKeyboardMarkup(
 
 gender_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Pria"), KeyboardButton(text="Wanita")]
+        [KeyboardButton(text="Cowo"), KeyboardButton(text="Cewe")]
     ],
     resize_keyboard=True,
     one_time_keyboard=True
@@ -125,7 +125,7 @@ async def process_photo(msg: types.Message, state: FSMContext):
 async def gender_handler(msg: types.Message):
     await msg.answer("Pilih gender kamu:", reply_markup=gender_kb)
 
-@router.message(F.text.in_(["Pria", "Wanita"]))
+@router.message(F.text.in_(["Cowo", "Cewe"]))
 async def set_gender_handler(msg: types.Message):
     set_gender(msg.from_user.id, msg.text)
     await msg.answer(f"Gender kamu diset sebagai *{msg.text}*", parse_mode="Markdown", reply_markup=main_kb)
@@ -176,22 +176,13 @@ async def next_handler(msg: types.Message):
         message_you = f"Nama: {info_you['name']}\nUmur: {info_you['age']}"
         message_partner = f"Nama: {info_partner['name']}\nUmur: {info_partner['age']}"
 
-        await msg.answer(f"🔄 Terhubung dengan *{info_partner['name']}* ({info_partner['age']} tahun)", parse_mode="Markdown")
+        await msg.answer(f"🔄 Terhubung dengan Teman ({info_partner['age']} tahun)", parse_mode="Markdown")
         await bot.send_photo(msg.chat.id, info_partner['photo'], caption=message_partner)
         
-        await bot.send_message(new_partner, f"🔄 Terhubung dengan *{info_you['name']}* ({info_you['age']} tahun)", parse_mode="Markdown")
+        await bot.send_message(new_partner, f"🔄 Terhubung dengan Teman ({info_you['age']} tahun)", parse_mode="Markdown")
         await bot.send_photo(new_partner, info_you['photo'], caption=message_you)
     else:
         await msg.answer("⏳ Menunggu teman baru...")
-
-@router.message(F.text)
-async def text_chat_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_message(partner, msg.text)
-    else:
-        await msg.answer("Kamu belum terhubung dengan siapa pun.\nTekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
 @router.message(F.photo)
 async def photo_chat_handler(msg: types.Message):
