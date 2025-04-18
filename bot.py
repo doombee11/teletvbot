@@ -81,12 +81,12 @@ def set_gender(user_id, gender):
     user_data[user_id]['gender'] = gender
 
 @router.message(Command("start"))
-async def start_handler(msg: types.Message):
+async def start_handler(msg: types.Message, state: FSMContext):
     user_id = msg.from_user.id
     if user_id not in user_data or not all(k in user_data[user_id] for k in ('name', 'age', 'photo')):
         await msg.answer("👋 Halo! Sebelum mulai ngobrol, isi dulu data kamu ya: nama, umur, dan foto.", reply_markup=ReplyKeyboardRemove())
         await msg.answer("Ketik nama kamu (maks 20 karakter, huruf saja):")
-        await Form.waiting_for_name.set()
+        await state.set_state(Form.waiting_for_name)  # Use `set_state` here instead
     else:
         await msg.answer("👋 Halo! Tekan *Cari Teman 🔍* untuk mulai ngobrol!", parse_mode="Markdown", reply_markup=main_kb)
 
