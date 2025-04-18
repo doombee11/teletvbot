@@ -1,5 +1,5 @@
 from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.fsm.storage.memory import MemoryStorage
 import logging
 
 TOKEN = "7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4"
