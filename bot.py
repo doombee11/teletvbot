@@ -1,7 +1,7 @@
-from aiogram import Dispatcher, Bot
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
-from aiogram.utils import logging
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram import F
 
 TOKEN = "7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4"
 
@@ -20,7 +20,6 @@ waiting_users = set()
 active_chats = {}  # user_id: partner_id
 user_data = {}     # user_id: {'gender': ..., 'nama': ...}
 
-# ====== HELPER FUNCS ======
 def find_partner(user_id):
     if waiting_users:
         partner_id = waiting_users.pop()
@@ -60,6 +59,8 @@ def set_nama(user_id, nama):
 def get_user_info(user_id):
     return user_data.get(user_id, {'gender': 'Tidak diketahui', 'nama': 'Anonim'})
 
+
+# ====== COMMANDS ======
 
 @dp.message_handler(commands=['start'])
 async def start_handler(msg: types.Message):
@@ -144,6 +145,6 @@ async def chat_handler(msg: types.Message):
     else:
         await msg.answer("Kamu belum terhubung dengan siapa pun.\nTekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
+
 if __name__ == '__main__':
-    
     dp.start_polling()
