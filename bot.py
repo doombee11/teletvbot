@@ -2,6 +2,7 @@ import os
 import logging
 import asyncio
 import re
+import json
 from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, Router, types, F
@@ -43,6 +44,20 @@ waiting_users = set()
 active_chats = {}
 user_data = {}
 
+USER_DATA_FILE = "user_data.json"
+
+def load_user_data():
+    global user_data
+    if os.path.exists(USER_DATA_FILE):
+        with open(USER_DATA_FILE, "r") as f:
+            user_data = json.load(f)
+
+def save_user_data():
+    with open(USER_DATA_FILE, "w") as f:
+        json.dump(user_data, f)
+
+load_user_data()
+
 class Form(StatesGroup):
     waiting_for_name = State()
     waiting_for_age = State()
@@ -77,6 +92,7 @@ def get_partner(user_id):
 
 def set_user_info(user_id, name, age, photo, gender, about):
     user_data[user_id] = {'name': name, 'age': age, 'photo': photo, 'gender': gender, 'about': about}
+    save_user_data()
     logging.info(f"User data updated: {user_data[user_id]}")
 
 def get_user_info(user_id):
@@ -181,7 +197,6 @@ async def handle_voice_note(msg: types.Message):
             await msg.delete()
             
             await bot.send_voice(partner_id, msg.voice.file_id)
-            await msg.answer("🎧 Voice note diteruskan ke teman kamu!")
         except Exception as e:
             logging.error(f"Failed to send voice note: {e}")
             await msg.answer("❌ Gagal mengirim voice note ke teman.")
@@ -203,7 +218,6 @@ async def handle_sticker(msg: types.Message):
             await msg.delete()
             
             await bot.send_sticker(partner_id, msg.sticker.file_id)
-            await msg.answer("🎨 Stiker diteruskan ke teman kamu!")
         except Exception as e:
             logging.error(f"Failed to send sticker: {e}")
             await msg.answer("❌ Gagal mengirim stiker ke teman.")
