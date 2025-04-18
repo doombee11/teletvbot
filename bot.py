@@ -201,4 +201,9 @@ async def photo_chat_handler(msg: types.Message):
     else:
         await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
-@router
+@router.message(F.video)
+async def video_chat_handler(msg: types.Message):
+    user_id = msg.from_user.id
+    if is_chatting(user_id):
+        partner = get_partner(user_id)
+        await bot.send_video(partner, msg.video.file_id
