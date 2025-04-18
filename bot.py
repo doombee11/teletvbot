@@ -5,6 +5,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 import logging
+from dotenv import load_dotenv
+load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
 
