@@ -86,7 +86,7 @@ async def start_handler(msg: types.Message, state: FSMContext):
     if user_id not in user_data or not all(k in user_data[user_id] for k in ('name', 'age', 'photo')):
         await msg.answer("👋 Halo! Sebelum mulai ngobrol, isi dulu data kamu ya: nama, umur, dan foto.", reply_markup=ReplyKeyboardRemove())
         await msg.answer("Ketik nama kamu (maks 20 karakter, huruf saja):")
-        await state.set_state(Form.waiting_for_name)  # Use `set_state` here instead
+        await state.set_state(Form.waiting_for_name)
     else:
         await msg.answer("👋 Halo! Tekan *Cari Teman 🔍* untuk mulai ngobrol!", parse_mode="Markdown", reply_markup=main_kb)
 
@@ -101,7 +101,7 @@ async def process_name(msg: types.Message, state: FSMContext):
         return
     await state.update_data(name=name)
     await msg.answer("Berapa umur kamu? (angka 1-99):")
-    await Form.waiting_for_age.set()
+    await state.set_state(Form.waiting_for_age)
 
 @router.message(Form.waiting_for_age)
 async def process_age(msg: types.Message, state: FSMContext):
@@ -111,7 +111,7 @@ async def process_age(msg: types.Message, state: FSMContext):
         return
     await state.update_data(age=age)
     await msg.answer("Sekarang kirim foto profil kamu:")
-    await Form.waiting_for_photo.set()
+    await state.set_state(Form.waiting_for_photo)
 
 @router.message(Form.waiting_for_photo, F.photo)
 async def process_photo(msg: types.Message, state: FSMContext):
