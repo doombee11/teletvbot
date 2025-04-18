@@ -92,6 +92,13 @@ def get_user_info(user_id):
 @router.message(Command("start"))
 async def start_handler(msg: types.Message, state: FSMContext):
     logging.info(f"User {msg.from_user.id} started the bot.")
+    user_id = msg.from_user.id
+    data = user_data.get(user_id)
+
+    if data and all(k in data for k in ('name', 'age', 'photo', 'gender', 'about')):
+        await msg.answer("👋 Selamat datang kembali!", reply_markup=main_kb)
+        return
+
     await msg.answer("👋 Halo! Sebelum mulai, isi dulu data kamu ya.", reply_markup=ReplyKeyboardRemove())
     await msg.answer("Ketik nama kamu:")
     await state.set_state(Form.waiting_for_name)
