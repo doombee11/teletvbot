@@ -1,13 +1,13 @@
-import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from aiogram import F
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+import logging
 
 TOKEN = "7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4"
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 main_kb = ReplyKeyboardMarkup(resize_keyboard=True)
 main_kb.add(KeyboardButton("Cari Teman 🔍"))
@@ -60,7 +60,6 @@ def get_user_info(user_id):
     return user_data.get(user_id, {'gender': 'Tidak diketahui', 'nama': 'Anonim'})
 
 
-# ====== COMMANDS ======
 
 @dp.message_handler(commands=['start'])
 async def start_handler(msg: types.Message):
