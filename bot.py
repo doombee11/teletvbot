@@ -1,23 +1,26 @@
 import os
 import logging
-from aiogram import Bot, Dispatcher, types
+import asyncio
+from dotenv import load_dotenv
+
+from aiogram import Bot, Dispatcher, Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from dotenv import load_dotenv
-load_dotenv()
 
+load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 if not TOKEN:
     raise ValueError("Token bot tidak ditemukan! Pastikan environment variable BOT_TOKEN sudah diset.")
 
 logging.basicConfig(level=logging.INFO)
+
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
-
-dp = Dispatcher(storage=storage, bot=bot)
+dp = Dispatcher(storage=storage)
+router = Router()
 
 main_kb = ReplyKeyboardMarkup(
     keyboard=[
@@ -81,7 +84,7 @@ def set_nama(user_id, nama):
 def get_user_info(user_id):
     return user_data.get(user_id, {'gender': 'Tidak diketahui', 'nama': 'Anonim'})
 
-@dp.message_handler(commands=['start'])
+@router.message(commands=['start'])
 async def start_handler(msg: types.Message):
     await msg.answer(
         "👋 Halo! Ini bot Random Chat ala OmeTV versi chat teks.\n\n"
@@ -92,21 +95,21 @@ async def start_handler(msg: types.Message):
         parse_mode="Markdown", reply_markup=main_kb
     )
 
-@dp.message_handler(commands=['gender'])
+@router.message(commands=['gender'])
 async def gender_handler(msg: types.Message):
     await msg.answer("Pilih gender kamu:", reply_markup=gender_kb)
 
-@dp.message_handler(lambda msg: msg.text in ["Pria", "Wanita"])
+@router.message(F.text.in_(['Pria', 'Wanita']))
 async def set_gender_handler(msg: types.Message):
     set_gender(msg.from_user.id, msg.text)
     await msg.answer(f"Gender kamu diset sebagai *{msg.text}*", parse_mode='Markdown', reply_markup=main_kb)
 
-@dp.message_handler(commands=['setnama'])
-async def set_nama_handler(msg: types.Message):
+@router.message(commands=['setnama'])
+async def set_nama_handler(msg: types.Message, state: FSMContext):
     await msg.answer("Ketik nama panggilan kamu (maks 20 karakter):", reply_markup=ReplyKeyboardRemove())
-    await Form.waiting_for_name.set()
+    await state.set_state(Form.waiting_for_name)
 
-@dp.message_handler(state=Form.waiting_for_name)
+@router.message(Form.waiting_for_name)
 async def process_name(msg: types.Message, state: FSMContext):
     name = msg.text
     if len(name) > 20:
@@ -114,9 +117,9 @@ async def process_name(msg: types.Message, state: FSMContext):
         return
     set_nama(msg.from_user.id, name)
     await msg.answer(f"Nama kamu diset sebagai *{name}*", parse_mode="Markdown", reply_markup=main_kb)
-    await state.finish()
+    await state.clear()
 
-@dp.message_handler(lambda msg: msg.text == "Cari Teman 🔍")
+@router.message(F.text == "Cari Teman 🔍")
 async def cari_handler(msg: types.Message):
     user_id = msg.from_user.id
     if is_chatting(user_id):
@@ -133,7 +136,7 @@ async def cari_handler(msg: types.Message):
     else:
         await msg.answer("⏳ Menunggu teman tersedia...")
 
-@dp.message_handler(lambda msg: msg.text == "Berhenti ❌")
+@router.message(F.text == "Berhenti ❌")
 async def stop_handler(msg: types.Message):
     user_id = msg.from_user.id
     partner = end_chat(user_id)
@@ -141,7 +144,7 @@ async def stop_handler(msg: types.Message):
         await bot.send_message(partner, "🚫 Temanmu telah keluar dari obrolan.")
     await msg.answer("Kamu telah keluar dari obrolan.", reply_markup=main_kb)
 
-@dp.message_handler(lambda msg: msg.text == "Next 🔁")
+@router.message(F.text == "Next 🔁")
 async def next_handler(msg: types.Message):
     user_id = msg.from_user.id
     partner = end_chat(user_id)
@@ -157,7 +160,7 @@ async def next_handler(msg: types.Message):
     else:
         await msg.answer("⏳ Menunggu teman baru...")
 
-@dp.message_handler()
+@router.message()
 async def chat_handler(msg: types.Message):
     user_id = msg.from_user.id
     if is_chatting(user_id):
@@ -166,5 +169,9 @@ async def chat_handler(msg: types.Message):
     else:
         await msg.answer("Kamu belum terhubung dengan siapa pun.\nTekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
+async def main():
+    dp.include_router(router)
+    await dp.start_polling(bot)
+
 if __name__ == '__main__':
-    dp.start_polling()
+    asyncio.run(main())
