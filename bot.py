@@ -1,9 +1,8 @@
 import os
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 import logging
 from dotenv import load_dotenv
 load_dotenv()
@@ -16,6 +15,7 @@ if not TOKEN:
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
+
 dp = Dispatcher(storage=storage, bot=bot)
 
 main_kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -30,7 +30,7 @@ active_chats = {}
 user_data = {}
 
 class Form(StatesGroup):
-    waiting_for_name = State()  # State untuk menunggu nama
+    waiting_for_name = State()
 
 def find_partner(user_id):
     if waiting_users:
@@ -94,7 +94,7 @@ async def set_gender_handler(msg: types.Message):
 @dp.message_handler(commands=['setnama'])
 async def set_nama_handler(msg: types.Message):
     await msg.answer("Ketik nama panggilan kamu (maks 20 karakter):", reply_markup=ReplyKeyboardRemove())
-    await Form.waiting_for_name.set()  # Pindah ke state waiting_for_name
+    await Form.waiting_for_name.set()
 
 @dp.message_handler(state=Form.waiting_for_name)
 async def process_name(msg: types.Message, state: FSMContext):
@@ -104,7 +104,7 @@ async def process_name(msg: types.Message, state: FSMContext):
         return
     set_nama(msg.from_user.id, name)
     await msg.answer(f"Nama kamu diset sebagai *{name}*", parse_mode="Markdown", reply_markup=main_kb)
-    await state.finish()  # Kembalikan ke state awal
+    await state.finish()
 
 @dp.message_handler(lambda msg: msg.text == "Cari Teman 🔍")
 async def cari_handler(msg: types.Message):
