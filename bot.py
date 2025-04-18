@@ -45,6 +45,8 @@ user_data = {}
 
 class Form(StatesGroup):
     waiting_for_name = State()
+    waiting_for_age = State()
+    waiting_for_photo = State()
 
 def find_partner(user_id):
     if waiting_users:
@@ -72,29 +74,63 @@ def is_chatting(user_id):
 def get_partner(user_id):
     return active_chats.get(user_id)
 
-def set_gender(user_id, gender):
+def set_user_info(user_id, name, age, photo):
     if user_id not in user_data:
         user_data[user_id] = {}
-    user_data[user_id]['gender'] = gender
-
-def set_nama(user_id, nama):
-    if user_id not in user_data:
-        user_data[user_id] = {}
-    user_data[user_id]['nama'] = nama
+    user_data[user_id]['name'] = name
+    user_data[user_id]['age'] = age
+    user_data[user_id]['photo'] = photo
 
 def get_user_info(user_id):
-    return user_data.get(user_id, {'gender': 'Tidak diketahui', 'nama': 'Anonim'})
+    return user_data.get(user_id, {'name': 'Anonim', 'age': 'Tidak diketahui', 'photo': None})
 
 @router.message(Command("start"))
 async def start_handler(msg: types.Message):
-    await msg.answer(
-        "👋 Halo! Ini bot Random Chat ala OmeTV versi chat teks.\n\n"
-        "Kamu bisa:\n"
-        "🔹 /gender - atur gender kamu\n"
-        "🔹 /setnama - atur nama panggilan\n\n"
-        "Lalu tekan *Cari Teman 🔍* buat mulai ngobrol!",
-        parse_mode="Markdown", reply_markup=main_kb
-    )
+    user_id = msg.from_user.id
+    
+    if user_id not in user_data:
+        await msg.answer(
+            "👋 Halo! Sebelum mulai ngobrol, kita perlu mengisi beberapa data. Yuk, isi nama, umur, dan foto kamu!",
+            parse_mode="Markdown", reply_markup=ReplyKeyboardRemove()
+        )
+        await msg.answer("Ketik nama kamu (maks 20 karakter):", reply_markup=ReplyKeyboardRemove())
+        await Form.waiting_for_name.set()
+    else:
+        await msg.answer(
+            "👋 Halo! Kamu sudah terdaftar. Tekan *Cari Teman 🔍* untuk mulai ngobrol!",
+            parse_mode="Markdown", reply_markup=main_kb
+        )
+
+@router.message(Form.waiting_for_name)
+async def process_name(msg: types.Message, state: FSMContext):
+    name = msg.text
+    if len(name) > 20:
+        await msg.answer("Nama terlalu panjang. Coba lagi (maks 20 karakter):")
+        return
+    await state.update_data(name=name)
+    await msg.answer("Berapa umur kamu?", reply_markup=ReplyKeyboardRemove())
+    await Form.waiting_for_age.set()
+
+@router.message(Form.waiting_for_age)
+async def process_age(msg: types.Message, state: FSMContext):
+    age = msg.text
+    if not age.isdigit():
+        await msg.answer("Umur harus berupa angka. Coba lagi:")
+        return
+    await state.update_data(age=age)
+    await msg.answer("Kirimkan foto kamu:", reply_markup=ReplyKeyboardRemove())
+    await Form.waiting_for_photo.set()
+
+@router.message(Form.waiting_for_photo, content_types=types.ContentTypes.PHOTO)
+async def process_photo(msg: types.Message, state: FSMContext):
+    photo = msg.photo[-1].file_id
+    user_data = await state.get_data()
+    name = user_data.get("name")
+    age = user_data.get("age")
+    set_user_info(msg.from_user.id, name, age, photo)
+    
+    await msg.answer(f"Data kamu berhasil disimpan!\nNama: {name}\nUmur: {age}", reply_markup=main_kb)
+    await state.clear()
 
 @router.message(Command("gender"))
 async def gender_handler(msg: types.Message):
@@ -104,21 +140,6 @@ async def gender_handler(msg: types.Message):
 async def set_gender_handler(msg: types.Message):
     set_gender(msg.from_user.id, msg.text)
     await msg.answer(f"Gender kamu diset sebagai *{msg.text}*", parse_mode='Markdown', reply_markup=main_kb)
-
-@router.message(Command("setnama"))
-async def set_nama_handler(msg: types.Message, state: FSMContext):
-    await msg.answer("Ketik nama panggilan kamu (maks 20 karakter):", reply_markup=ReplyKeyboardRemove())
-    await state.set_state(Form.waiting_for_name)
-
-@router.message(Form.waiting_for_name)
-async def process_name(msg: types.Message, state: FSMContext):
-    name = msg.text
-    if len(name) > 20:
-        await msg.answer("Nama terlalu panjang. Coba lagi (maks 20 karakter):")
-        return
-    set_nama(msg.from_user.id, name)
-    await msg.answer(f"Nama kamu diset sebagai *{name}*", parse_mode="Markdown", reply_markup=main_kb)
-    await state.clear()
 
 @router.message(F.text == "Cari Teman 🔍")
 async def cari_handler(msg: types.Message):
@@ -132,8 +153,14 @@ async def cari_handler(msg: types.Message):
         info_partner = get_user_info(partner_id)
         info_you = get_user_info(user_id)
 
-        await msg.answer(f"🔗 Terhubung dengan *{info_partner['nama']}* ({info_partner['gender']})", parse_mode="Markdown")
-        await bot.send_message(partner_id, f"🔗 Terhubung dengan *{info_you['nama']}* ({info_you['gender']})", parse_mode="Markdown")
+        partner_photo = info_partner['photo'] if info_partner['photo'] else None
+        await msg.answer(
+            f"🔗 Terhubung dengan *{info_partner['name']}* ({info_partner['age']} tahun)",
+            parse_mode="Markdown"
+        )
+        await bot.send_message(partner_id, f"🔗 Terhubung dengan *{info_you['name']}* ({info_you['age']} tahun)", parse_mode="Markdown")
+        if partner_photo:
+            await bot.send_photo(msg.chat.id, partner_photo)
     else:
         await msg.answer("⏳ Menunggu teman tersedia...")
 
@@ -156,8 +183,14 @@ async def next_handler(msg: types.Message):
         info_partner = get_user_info(new_partner)
         info_you = get_user_info(user_id)
 
-        await msg.answer(f"🔄 Terhubung dengan *{info_partner['nama']}* ({info_partner['gender']})", parse_mode="Markdown")
-        await bot.send_message(new_partner, f"🔄 Terhubung dengan *{info_you['nama']}* ({info_you['gender']})", parse_mode="Markdown")
+        partner_photo = info_partner['photo'] if info_partner['photo'] else None
+        await msg.answer(
+            f"🔄 Terhubung dengan *{info_partner['name']}* ({info_partner['age']} tahun)",
+            parse_mode="Markdown"
+        )
+        await bot.send_message(new_partner, f"🔄 Terhubung dengan *{info_you['name']}* ({info_you['age']} tahun)", parse_mode="Markdown")
+        if partner_photo:
+            await bot.send_photo(msg.chat.id, partner_photo)
     else:
         await msg.answer("⏳ Menunggu teman baru...")
 
@@ -186,20 +219,4 @@ async def video_handler(msg: types.Message):
         partner = get_partner(user_id)
         await bot.send_video(partner, msg.video.file_id, caption=msg.caption)
     else:
-        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
-@router.message(F.voice)
-async def voice_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_voice(partner, msg.voice.file_id, caption=msg.caption)
-    else:
-        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
-async def main():
-    dp.include_router(router)
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍*
