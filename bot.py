@@ -193,4 +193,18 @@ async def photo_chat_handler(msg: types.Message):
         await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
 @router.message(F.video)
-async def video_chat_handler(msg: types
+async def video_chat_handler(msg: types.Message):
+    user_id = msg.from_user.id
+    if is_chatting(user_id):
+        partner = get_partner(user_id)
+        await bot.send_video(partner, msg.video.file_id, caption=msg.caption)
+    else:
+        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
+
+async def main():
+    dp.include_router(router)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
