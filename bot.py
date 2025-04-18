@@ -147,8 +147,7 @@ async def process_about(msg: types.Message, state: FSMContext):
         await msg.answer("❌ Hanya huruf, angka, spasi, dan emotikon yang diperbolehkan. Coba lagi:")
         return
 
-    about = about.replace('_', '\\_')
-    about = f"_{about}_"
+about = about.replace('_', '\\_')
 
     data = await state.get_data()
     set_user_info(
@@ -264,6 +263,25 @@ async def stop_handler(msg: types.Message):
     if partner:
         await bot.send_message(partner, "🚫 Temanmu keluar dari obrolan.", reply_markup=main_kb)
     await msg.answer("🚪 Kamu keluar dari obrolan.", reply_markup=main_kb)
+
+@router.message(F.text)
+async def relay_text_message(msg: types.Message):
+    user_id = msg.from_user.id
+
+    if not is_chatting(user_id):
+        await msg.answer("⚠️ Kamu belum terhubung dengan teman. Cari teman dulu dengan 'Cari Teman 🔍'.")
+        return
+
+    partner_id = get_partner(user_id)
+
+    if partner_id:
+        try:
+            await bot.send_message(partner_id, msg.text)
+        except Exception as e:
+            logging.error(f"Gagal kirim pesan ke partner: {e}")
+            await msg.answer("❌ Gagal mengirim pesan ke teman.")
+    else:
+        await msg.answer("⚠️ Teman kamu sudah keluar atau tidak tersedia.")
 
 async def main():
     dp.include_router(router)
