@@ -12,9 +12,8 @@ from aiogram.filters import Command
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-
 if not TOKEN:
-    raise ValueError("Token bot tidak ditemukan! Pastikan environment variable BOT_TOKEN sudah diset.")
+    raise ValueError("Token bot tidak ditemukan! Pastikan BOT_TOKEN diset di .env")
 
 logging.basicConfig(level=logging.INFO)
 
@@ -49,18 +48,14 @@ class Form(StatesGroup):
     waiting_for_photo = State()
 
 def find_partner(user_id):
-    if waiting_users:
-        partner_id = waiting_users.pop()
+    for partner_id in list(waiting_users):
         if partner_id != user_id:
+            waiting_users.remove(partner_id)
             active_chats[user_id] = partner_id
             active_chats[partner_id] = user_id
             return partner_id
-        else:
-            waiting_users.add(user_id)
-            return None
-    else:
-        waiting_users.add(user_id)
-        return None
+    waiting_users.add(user_id)
+    return None
 
 def end_chat(user_id):
     partner = active_chats.pop(user_id, None)
@@ -75,11 +70,7 @@ def get_partner(user_id):
     return active_chats.get(user_id)
 
 def set_user_info(user_id, name, age, photo):
-    if user_id not in user_data:
-        user_data[user_id] = {}
-    user_data[user_id]['name'] = name
-    user_data[user_id]['age'] = age
-    user_data[user_id]['photo'] = photo
+    user_data[user_id] = {'name': name, 'age': age, 'photo': photo}
 
 def get_user_info(user_id):
     return user_data.get(user_id, {'name': 'Anonim', 'age': 'Tidak diketahui', 'photo': None})
@@ -202,8 +193,4 @@ async def photo_chat_handler(msg: types.Message):
         await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
 @router.message(F.video)
-async def video_chat_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_video(partner, msg.video.file_id
+async def video_chat_handler(msg: types
