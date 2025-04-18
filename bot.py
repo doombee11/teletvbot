@@ -85,7 +85,7 @@ async def start_handler(msg: types.Message, state: FSMContext):
     user_id = msg.from_user.id
     if user_id not in user_data or not all(k in user_data[user_id] for k in ('name', 'age', 'photo')):
         await msg.answer("👋 Halo! Sebelum mulai ngobrol, isi dulu data kamu ya: nama, umur, dan foto.", reply_markup=ReplyKeyboardRemove())
-        await msg.answer("Ketik nama kamu (maks 20 karakter, huruf saja):")
+        await msg.answer("Ketik nama kamu (maks 20 karakter, huruf dan spasi):")
         await state.set_state(Form.waiting_for_name)
     else:
         await msg.answer("👋 Halo! Tekan *Cari Teman 🔍* untuk mulai ngobrol!", parse_mode="Markdown", reply_markup=main_kb)
@@ -93,8 +93,8 @@ async def start_handler(msg: types.Message, state: FSMContext):
 @router.message(Form.waiting_for_name)
 async def process_name(msg: types.Message, state: FSMContext):
     name = msg.text.strip()
-    if not name.isalpha():
-        await msg.answer("❌ Nama hanya boleh huruf. Coba lagi:")
+    if not name.replace(" ", "").isalpha():
+        await msg.answer("❌ Nama hanya boleh huruf dan spasi. Coba lagi:")
         return
     if len(name) > 20:
         await msg.answer("❌ Nama terlalu panjang. Maksimal 20 karakter:")
