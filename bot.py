@@ -5,7 +5,7 @@ from aiogram.fsm import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 import logging
 
-TOKEN = "7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4"
+TOKEN = os.getenv("7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4")
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
