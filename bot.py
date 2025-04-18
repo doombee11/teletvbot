@@ -46,6 +46,8 @@ class Form(StatesGroup):
     waiting_for_name = State()
     waiting_for_age = State()
     waiting_for_photo = State()
+    waiting_for_gender = State()
+    waiting_for_about = State()
 
 def find_partner(user_id):
     for partner_id in list(waiting_users):
@@ -73,17 +75,19 @@ def set_user_info(user_id, name, age, photo):
     user_data[user_id] = {'name': name, 'age': age, 'photo': photo}
 
 def get_user_info(user_id):
-    return user_data.get(user_id, {'name': 'Anonim', 'age': 'Tidak diketahui', 'photo': None})
-
-def set_gender(user_id, gender):
-    if user_id not in user_data:
-        user_data[user_id] = {}
-    user_data[user_id]['gender'] = gender
+    data = user_data.get(user_id, {})
+    return {
+        'name': data.get('name', 'Anonim'),
+        'age': data.get('age', 'Tidak diketahui'),
+        'photo': data.get('photo'),
+        'gender': data.get('gender', 'Tidak diketahui'),
+        'about': data.get('about', 'Tidak tersedia')
+    }
 
 @router.message(Command("start"))
 async def start_handler(msg: types.Message, state: FSMContext):
     user_id = msg.from_user.id
-    if user_id not in user_data or not all(k in user_data[user_id] for k in ('name', 'age', 'photo')):
+    if user_id not in user_data or not all(k in user_data[user_id] for k in ('name', 'age', 'photo', 'gender', 'about')):
         await msg.answer("👋 Halo! Sebelum mulai ngobrol, isi dulu data kamu ya🥰.", reply_markup=ReplyKeyboardRemove())
         await msg.answer("Ketik nama kamu:")
         await state.set_state(Form.waiting_for_name)
@@ -101,129 +105,4 @@ async def process_name(msg: types.Message, state: FSMContext):
         return
     await state.update_data(name=name)
     await msg.answer("Berapa umur kamu?")
-    await state.set_state(Form.waiting_for_age)
-
-@router.message(Form.waiting_for_age)
-async def process_age(msg: types.Message, state: FSMContext):
-    age = msg.text.strip()
-    if not age.isdigit() or not (1 <= int(age) <= 99):
-        await msg.answer("❌ Umur harus angka dan maksimal 2 digit (1-99). Coba lagi:")
-        return
-    await state.update_data(age=age)
-    await msg.answer("Sekarang kirim foto profil kamu:")
-    await state.set_state(Form.waiting_for_photo)
-
-@router.message(Form.waiting_for_photo, F.photo)
-async def process_photo(msg: types.Message, state: FSMContext):
-    photo_id = msg.photo[-1].file_id
-    data = await state.get_data()
-    set_user_info(msg.from_user.id, data['name'], data['age'], photo_id)
-    await msg.answer(f"✅ Data kamu disimpan!\nNama: {data['name']}\nUmur: {data['age']}", reply_markup=main_kb)
-    await state.clear()
-
-@router.message(Command("gender"))
-async def gender_handler(msg: types.Message):
-    await msg.answer("Pilih gender kamu:", reply_markup=gender_kb)
-
-@router.message(F.text.in_(["Cowo", "Cewe"]))
-async def set_gender_handler(msg: types.Message):
-    set_gender(msg.from_user.id, msg.text)
-    await msg.answer(f"Gender kamu diset sebagai *{msg.text}*", parse_mode="Markdown", reply_markup=main_kb)
-
-@router.message(F.text == "Cari Teman 🔍")
-async def cari_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if not all(k in user_data.get(user_id, {}) for k in ('name', 'age', 'photo')):
-        await msg.answer("❗ Isi nama, umur, dan foto kamu dulu dengan perintah /start.")
-        return
-    if is_chatting(user_id):
-        await msg.answer("⚠️ Kamu sedang ngobrol. Tekan 'Next 🔁' untuk ganti teman.")
-        return
-    partner_id = find_partner(user_id)
-    if partner_id:
-        info_you = get_user_info(user_id)
-        info_partner = get_user_info(partner_id)
-
-        message_you = f"Nama: {info_you['name']}\nUmur: {info_you['age']}"
-        message_partner = f"Nama: {info_partner['name']}\nUmur: {info_partner['age']}"
-
-        await msg.answer(f"🔗 Terhubung dengan *{info_partner['name']}* ({info_partner['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(msg.chat.id, info_partner['photo'], caption=message_partner)
-        
-        await bot.send_message(partner_id, f"🔗 Terhubung dengan *{info_you['name']}* ({info_you['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(partner_id, info_you['photo'], caption=message_you)
-    else:
-        await msg.answer("⏳ Menunggu teman tersedia...")
-
-@router.message(F.text == "Berhenti ❌")
-async def stop_handler(msg: types.Message):
-    partner = end_chat(msg.from_user.id)
-    if partner:
-        await bot.send_message(partner, "🚫 Temanmu keluar dari obrolan.")
-    await msg.answer("🚪 Kamu keluar dari obrolan.", reply_markup=main_kb)
-
-@router.message(F.text == "Next 🔁")
-async def next_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    partner = end_chat(user_id)
-    if partner:
-        await bot.send_message(partner, "🚫 Temanmu meninggalkan obrolan.")
-    new_partner = find_partner(user_id)
-    if new_partner:
-        info_you = get_user_info(user_id)
-        info_partner = get_user_info(new_partner)
-
-        message_you = f"Nama: {info_you['name']}\nUmur: {info_you['age']}"
-        message_partner = f"Nama: {info_partner['name']}\nUmur: {info_partner['age']}"
-
-        await msg.answer(f"🔄 Terhubung dengan Teman ({info_partner['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(msg.chat.id, info_partner['photo'], caption=message_partner)
-        
-        await bot.send_message(new_partner, f"🔄 Terhubung dengan Teman ({info_you['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(new_partner, info_you['photo'], caption=message_you)
-    else:
-        await msg.answer("⏳ Menunggu teman baru...")
-
-@router.message(F.photo)
-async def photo_chat_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_photo(partner, msg.photo[-1].file_id, caption=msg.caption)
-    else:
-        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
-@router.message(F.video)
-async def video_chat_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_video(partner, msg.video.file_id, caption=msg.caption)
-    else:
-        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
-@router.message(F.sticker)
-async def sticker_chat_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_sticker(partner, msg.sticker.file_id)
-    else:
-        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
-@router.message(F.animation)
-async def gif_chat_handler(msg: types.Message):
-    user_id = msg.from_user.id
-    if is_chatting(user_id):
-        partner = get_partner(user_id)
-        await bot.send_animation(partner, msg.animation.file_id, caption=msg.caption)
-    else:
-        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
-
-async def main():
-    dp.include_router(router)
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    await
