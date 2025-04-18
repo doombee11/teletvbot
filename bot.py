@@ -143,10 +143,15 @@ async def cari_handler(msg: types.Message):
     if partner_id:
         info_you = get_user_info(user_id)
         info_partner = get_user_info(partner_id)
+
+        message_you = f"Nama: {info_you['name']}\nUmur: {info_you['age']}"
+        message_partner = f"Nama: {info_partner['name']}\nUmur: {info_partner['age']}"
+
         await msg.answer(f"🔗 Terhubung dengan *{info_partner['name']}* ({info_partner['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(msg.chat.id, info_partner['photo'])
+        await bot.send_photo(msg.chat.id, info_partner['photo'], caption=message_partner)
+        
         await bot.send_message(partner_id, f"🔗 Terhubung dengan *{info_you['name']}* ({info_you['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(partner_id, info_you['photo'])
+        await bot.send_photo(partner_id, info_you['photo'], caption=message_you)
     else:
         await msg.answer("⏳ Menunggu teman tersedia...")
 
@@ -167,10 +172,15 @@ async def next_handler(msg: types.Message):
     if new_partner:
         info_you = get_user_info(user_id)
         info_partner = get_user_info(new_partner)
+
+        message_you = f"Nama: {info_you['name']}\nUmur: {info_you['age']}"
+        message_partner = f"Nama: {info_partner['name']}\nUmur: {info_partner['age']}"
+
         await msg.answer(f"🔄 Terhubung dengan *{info_partner['name']}* ({info_partner['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(msg.chat.id, info_partner['photo'])
+        await bot.send_photo(msg.chat.id, info_partner['photo'], caption=message_partner)
+        
         await bot.send_message(new_partner, f"🔄 Terhubung dengan *{info_you['name']}* ({info_you['age']} tahun)", parse_mode="Markdown")
-        await bot.send_photo(new_partner, info_you['photo'])
+        await bot.send_photo(new_partner, info_you['photo'], caption=message_you)
     else:
         await msg.answer("⏳ Menunggu teman baru...")
 
@@ -198,6 +208,24 @@ async def video_chat_handler(msg: types.Message):
     if is_chatting(user_id):
         partner = get_partner(user_id)
         await bot.send_video(partner, msg.video.file_id, caption=msg.caption)
+    else:
+        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
+
+@router.message(F.sticker)
+async def sticker_chat_handler(msg: types.Message):
+    user_id = msg.from_user.id
+    if is_chatting(user_id):
+        partner = get_partner(user_id)
+        await bot.send_sticker(partner, msg.sticker.file_id)
+    else:
+        await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
+
+@router.message(F.animation)
+async def gif_chat_handler(msg: types.Message):
+    user_id = msg.from_user.id
+    if is_chatting(user_id):
+        partner = get_partner(user_id)
+        await bot.send_animation(partner, msg.animation.file_id, caption=msg.caption)
     else:
         await msg.answer("Kamu belum terhubung. Tekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
