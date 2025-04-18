@@ -1,6 +1,5 @@
+import os
 import aiogram
-print(aiogram.__version__)
-
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
