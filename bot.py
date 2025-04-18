@@ -194,8 +194,7 @@ async def handle_voice_note(msg: types.Message):
 
     if partner_id:
         try:
-            await msg.delete()
-            
+            # Kirim voice note ke partner tanpa menghapus pesan
             await bot.send_voice(partner_id, msg.voice.file_id)
         except Exception as e:
             logging.error(f"Failed to send voice note: {e}")
@@ -215,8 +214,6 @@ async def handle_sticker(msg: types.Message):
 
     if partner_id:
         try:
-            await msg.delete()
-            
             await bot.send_sticker(partner_id, msg.sticker.file_id)
         except Exception as e:
             logging.error(f"Failed to send sticker: {e}")
