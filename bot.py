@@ -8,6 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.filters import Command
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -84,7 +85,7 @@ def set_nama(user_id, nama):
 def get_user_info(user_id):
     return user_data.get(user_id, {'gender': 'Tidak diketahui', 'nama': 'Anonim'})
 
-@router.message(commands=['start'])
+@router.message(Command("start"))
 async def start_handler(msg: types.Message):
     await msg.answer(
         "👋 Halo! Ini bot Random Chat ala OmeTV versi chat teks.\n\n"
@@ -95,16 +96,16 @@ async def start_handler(msg: types.Message):
         parse_mode="Markdown", reply_markup=main_kb
     )
 
-@router.message(commands=['gender'])
+@router.message(Command("gender"))
 async def gender_handler(msg: types.Message):
     await msg.answer("Pilih gender kamu:", reply_markup=gender_kb)
 
-@router.message(F.text.in_(['Pria', 'Wanita']))
+@router.message(F.text.in_(["Pria", "Wanita"]))
 async def set_gender_handler(msg: types.Message):
     set_gender(msg.from_user.id, msg.text)
     await msg.answer(f"Gender kamu diset sebagai *{msg.text}*", parse_mode='Markdown', reply_markup=main_kb)
 
-@router.message(commands=['setnama'])
+@router.message(Command("setnama"))
 async def set_nama_handler(msg: types.Message, state: FSMContext):
     await msg.answer("Ketik nama panggilan kamu (maks 20 karakter):", reply_markup=ReplyKeyboardRemove())
     await state.set_state(Form.waiting_for_name)
@@ -173,5 +174,5 @@ async def main():
     dp.include_router(router)
     await dp.start_polling(bot)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
