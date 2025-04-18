@@ -1,7 +1,7 @@
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from aiogram.utils import executor
+from aiogram import Dispatcher, Bot
+from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
+from aiogram.utils import logging
 
 TOKEN = "7501460896:AAHImKheBZRP-ckVD1IVlnq868hnUhvi0q4"
 
@@ -145,4 +145,5 @@ async def chat_handler(msg: types.Message):
         await msg.answer("Kamu belum terhubung dengan siapa pun.\nTekan *Cari Teman 🔍* untuk mulai.", parse_mode="Markdown")
 
 if __name__ == '__main__':
-    executor.start_polling(dp)
+    
+    dp.start_polling()
