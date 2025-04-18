@@ -1,5 +1,4 @@
 import os
-import aiogram
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -8,6 +7,9 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemo
 import logging
 
 TOKEN = os.getenv("BOT_TOKEN")
+
+if not TOKEN:
+    raise ValueError("Token bot tidak ditemukan! Pastikan environment variable BOT_TOKEN sudah diset.")
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
