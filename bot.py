@@ -186,6 +186,26 @@ async def handle_voice_note(msg: types.Message):
     else:
         await msg.answer("⚠️ Teman chat kamu sudah keluar atau tidak tersedia.")
 
+@router.message(F.sticker)
+async def handle_sticker(msg: types.Message):
+    user_id = msg.from_user.id
+
+    if not is_chatting(user_id):
+        await msg.answer("⚠️ Kamu belum terhubung dengan teman. Cari teman terlebih dahulu dengan 'Cari Teman 🔍'.")
+        return
+
+    partner_id = get_partner(user_id)
+
+    if partner_id:
+        try:
+            await bot.send_sticker(partner_id, msg.sticker.file_id)
+            await msg.answer("🎨 Stiker diteruskan ke teman kamu!")
+        except Exception as e:
+            logging.error(f"Failed to send sticker: {e}")
+            await msg.answer("❌ Gagal mengirim stiker ke teman.")
+    else:
+        await msg.answer("⚠️ Teman chat kamu sudah keluar atau tidak tersedia.")
+
 @router.message(F.text == "Cari Teman 🔍")
 async def cari_handler(msg: types.Message):
     user_id = msg.from_user.id
