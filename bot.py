@@ -178,6 +178,8 @@ async def handle_voice_note(msg: types.Message):
 
     if partner_id:
         try:
+            await msg.delete()
+            
             await bot.send_voice(partner_id, msg.voice.file_id)
             await msg.answer("🎧 Voice note diteruskan ke teman kamu!")
         except Exception as e:
@@ -198,6 +200,8 @@ async def handle_sticker(msg: types.Message):
 
     if partner_id:
         try:
+            await msg.delete()
+            
             await bot.send_sticker(partner_id, msg.sticker.file_id)
             await msg.answer("🎨 Stiker diteruskan ke teman kamu!")
         except Exception as e:
